@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tic-Tac-Toe | Telegram Mini App</title>
+    
+    <!-- Telegram Mini App Script -->
+    <script src="https://telegram.org/js/telegram-web-app.js?61"></script>
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/game.css">
+    <link rel="stylesheet" href="css/lobby.css">
+    <link rel="stylesheet" href="css/leaderboard.css">
+    <link rel="stylesheet" href="css/profile.css">
+    
+    <!-- Prevent zoom on iOS -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#0a0e1a">
+<script src="https://sites.super.myninja.ai/_assets/ninja-daytona-script.js"></script>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="screen active">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p class="loading-text">Loading...</p>
+        </div>
+    </div>
+
+    <!-- Subscription Gate Screen -->
+    <div id="subscription-screen" class="screen">
+        <div class="subscription-content">
+            <div class="subscription-icon">📢</div>
+            <h2>Subscribe Required</h2>
+            <p class="subscription-message">
+                Please subscribe to our channel to play the game.
+            </p>
+            <a id="subscribe-link" class="btn btn-primary" href="#" target="_blank">
+                Subscribe to Channel
+            </a>
+            <button id="check-subscription-btn" class="btn btn-secondary">
+                I've Subscribed
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Menu Screen -->
+    <div id="menu-screen" class="screen">
+        <div class="menu-content">
+            <!-- Header -->
+            <div class="menu-header">
+                <div class="player-info" id="player-info">
+                    <div class="player-avatar" id="player-avatar">
+                        <img src="" alt="Avatar" id="avatar-img">
+                    </div>
+                    <div class="player-details">
+                        <span class="player-name" id="player-name">Loading...</span>
+                        <span class="player-score" id="player-total-score">Score: 0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Game Title -->
+            <div class="game-title">
+                <h1>TIC-TAC-TOE</h1>
+                <span class="subtitle">6×6 Battle Arena</span>
+            </div>
+
+            <!-- Menu Buttons -->
+            <div class="menu-buttons">
+                <button class="btn btn-primary btn-large" id="play-btn">
+                    <span class="btn-icon">🎮</span>
+                    Play Game
+                </button>
+                
+                <button class="btn btn-secondary btn-large" id="join-lobby-btn">
+                    <span class="btn-icon">🔗</span>
+                    Join Lobby
+                </button>
+                
+                <button class="btn btn-secondary btn-large" id="leaderboard-btn">
+                    <span class="btn-icon">🏆</span>
+                    Leaderboard
+                </button>
+                
+                <button class="btn btn-secondary btn-large" id="profile-btn">
+                    <span class="btn-icon">👤</span>
+                    My Profile
+                </button>
+            </div>
+
+            <!-- Footer -->
+            <div class="menu-footer">
+                <span class="version">v1.0.0</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Play Mode Selection Screen -->
+    <div id="play-mode-screen" class="screen">
+        <div class="screen-header">
+            <button class="btn-back" id="back-from-play-mode">←</button>
+            <h2>Play Game</h2>
+            <div class="spacer"></div>
+        </div>
+        
+        <div class="screen-content">
+            <div class="mode-buttons">
+                <button class="btn btn-primary btn-large" id="create-lobby-btn">
+                    <span class="btn-icon">🏠</span>
+                    Create Lobby
+                </button>
+                
+                <button class="btn btn-secondary btn-large" id="browse-lobbies-btn">
+                    <span class="btn-icon">📋</span>
+                    Browse Lobbies
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Lobby Screen -->
+    <div id="create-lobby-screen" class="screen">
+        <div class="screen-header">
+            <button class="btn-back" id="back-from-create-lobby">←</button>
+            <h2>Create Lobby</h2>
+            <div class="spacer"></div>
+        </div>
+        
+        <div class="screen-content">
+            <div class="lobby-created" id="lobby-created-info" style="display: none;">
+                <div class="lobby-code-display">
+                    <span class="label">Lobby Code</span>
+                    <span class="code" id="created-lobby-code">ABC123</span>
+                </div>
+                
+                <div class="lobby-link-display">
+                    <span class="label">Share Link</span>
+                    <div class="share-link-container">
+                        <input type="text" readonly id="lobby-share-link" class="share-input">
+                        <button class="btn btn-small" id="copy-link-btn">Copy</button>
+                    </div>
+                </div>
+                
+                <button class="btn btn-primary" id="share-lobby-btn">
+                    <span class="btn-icon">📤</span>
+                    Share to Telegram
+                </button>
+                
+                <div class="waiting-status">
+                    <div class="waiting-spinner"></div>
+                    <span>Waiting for opponent...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Join Lobby Screen -->
+    <div id="join-lobby-screen" class="screen">
+        <div class="screen-header">
+            <button class="btn-back" id="back-from-join-lobby">←</button>
+            <h2>Join Lobby</h2>
+            <div class="spacer"></div>
+        </div>
+        
+        <div class="screen-content">
+            <div class="join-form">
+                <div class="form-group">
+                    <label for="lobby-code-input">Enter Lobby Code</label>
+                    <input type="text" id="lobby-code-input" placeholder="ABC123" maxlength="6" autocomplete="off">
+                </div>
+                
+                <button class="btn btn-primary" id="join-by-code-btn">
+                    Join Game
+                </button>
+            </div>
+            
+            <div class="divider">
+                <span>or</span>
+            </div>
+            
+            <div class="public-lobbies">
+                <h3>Public Lobbies</h3>
+                <div class="lobby-list" id="public-lobby-list">
+                    <div class="loading-text">Loading lobbies...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lobby Waiting Room Screen -->
+    <div id="lobby-room-screen" class="screen">
+        <div class="screen-header">
+            <button class="btn-back" id="leave-lobby-btn">←</button>
+            <h2>Lobby</h2>
+            <div class="spacer"></div>
+        </div>
+        
+        <div class="screen-content">
+            <div class="lobby-info">
+                <div class="lobby-code-display">
+                    <span class="label">Lobby Code</span>
+                    <span class="code" id="room-lobby-code">ABC123</span>
+                </div>
+                
+                <div class="players-display">
+                    <div class="player-slot host" id="player-slot-1">
+                        <div class="slot-avatar">
+                            <img src="" alt="">
+                        </div>
+                        <span class="slot-name">Waiting...</span>
+                        <span class="slot-status">Host</span>
+                    </div>
+                    
+                    <div class="vs-divider">VS</div>
+                    
+                    <div class="player-slot" id="player-slot-2">
+                        <div class="slot-avatar">
+                            <img src="" alt="">
+                        </div>
+                        <span class="slot-name">Waiting...</span>
+                        <span class="slot-status"></span>
+                    </div>
+                </div>
+                
+                <div class="lobby-actions">
+                    <button class="btn btn-primary btn-large" id="start-game-btn" style="display: none;">
+                        Start Game
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="game-screen" class="screen">
+        <div class="game-header">
+            <div class="opponent-info" id="opponent-info">
+                <div class="opponent-avatar">
+                    <img src="" alt="" id="opponent-avatar-img">
+                </div>
+                <span class="opponent-name" id="opponent-name">Opponent</span>
+                <span class="opponent-score" id="opponent-score">Score: 0</span>
+            </div>
+        </div>
+        
+        <div class="game-board-container">
+            <div class="turn-indicator" id="turn-indicator">
+                <span class="turn-text">Your Turn</span>
+                <span class="turn-symbol" id="turn-symbol">X</span>
+            </div>
+            
+            <div class="game-board" id="game-board">
+                <!-- Board cells will be generated by JavaScript -->
+            </div>
+            
+            <div class="score-display">
+                <div class="score-item player-x">
+                    <span class="score-label">X</span>
+                    <span class="score-value" id="score-x">0</span>
+                </div>
+                <div class="score-item player-o">
+                    <span class="score-label">O</span>
+                    <span class="score-value" id="score-o">0</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="game-footer">
+            <div class="my-info" id="my-info">
+                <span class="my-score" id="my-score">Score: 0</span>
+                <span class="my-name" id="my-name">You</span>
+                <div class="my-avatar">
+                    <img src="" alt="" id="my-avatar-img">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="game-over-screen" class="screen">
+        <div class="game-over-content">
+            <div class="result-icon" id="result-icon">🏆</div>
+            <h2 class="result-text" id="result-text">Victory!</h2>
+            
+            <div class="final-scores">
+                <div class="final-score-item winner" id="final-score-winner">
+                    <span class="final-score-name">Player 1</span>
+                    <span class="final-score-value">25</span>
+                </div>
+                <div class="final-score-item loser" id="final-score-loser">
+                    <span class="final-score-name">Player 2</span>
+                    <span class="final-score-value">15</span>
+                </div>
+            </div>
+            
+            <div class="game-over-actions">
+                <button class="btn btn-primary" id="play-again-btn">Play Again</button>
+                <button class="btn btn-secondary" id="back-to-menu-btn">Main Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaderboard Screen -->
+    <div id="leaderboard-screen" class="screen">
+        <div class="screen-header">
+            <button class="btn-back" id="back-from-leaderboard">←</button>
+            <h2>Leaderboard</h2>
+            <div class="spacer"></div>
+        </div>
+        
+        <div class="screen-content">
+            <div class="period-tabs">
+                <button class="period-tab active" data-period="today">Today</button>
+                <button class="period-tab" data-period="week">Week</button>
+                <button class="period-tab" data-period="month">Month</button>
+                <button class="period-tab" data-period="year">Year</button>
+                <button class="period-tab" data-period="all">All Time</button>
+            </div>
+            
+            <div class="leaderboard-list" id="leaderboard-list">
+                <div class="loading-text">Loading...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Screen -->
+    <div id="profile-screen" class="screen">
+        <div class="screen-header">
+            <button class="btn-back" id="back-from-profile">←</button>
+            <h2>My Profile</h2>
+            <div class="spacer"></div>
+        </div>
+        
+        <div class="screen-content">
+            <div class="profile-header">
+                <div class="profile-avatar">
+                    <img src="" alt="" id="profile-avatar-img">
+                </div>
+                <div class="profile-name">
+                    <input type="text" id="display-name-input" placeholder="Display Name">
+                    <button class="btn btn-small" id="save-name-btn">Save</button>
+                </div>
+            </div>
+            
+            <div class="profile-stats">
+                <div class="stat-card">
+                    <span class="stat-value" id="profile-total-games">0</span>
+                    <span class="stat-label">Total Games</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value" id="profile-wins">0</span>
+                    <span class="stat-label">Wins</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value" id="profile-losses">0</span>
+                    <span class="stat-label">Losses</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value" id="profile-win-rate">0%</span>
+                    <span class="stat-label">Win Rate</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value" id="profile-total-score">0</span>
+                    <span class="stat-label">Total Score</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value" id="profile-highest-score">0</span>
+                    <span class="stat-label">Highest Score</span>
+                </div>
+            </div>
+            
+            <div class="game-history">
+                <h3>Recent Games</h3>
+                <div class="history-list" id="game-history-list">
+                    <div class="loading-text">Loading...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/game-state.js"></script>
+    <script src="js/screens.js"></script>
+    <script src="js/game-board.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

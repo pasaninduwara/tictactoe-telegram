@@ -1,0 +1,414 @@
+/**
+ * Game Board Styles
+ * 6x6 Grid with visual feedback
+ */
+
+/* ========================================
+   GAME SCREEN LAYOUT
+   ======================================== */
+#game-screen {
+    background: var(--bg-primary);
+    padding: 0;
+}
+
+.game-header {
+    padding: var(--space-md);
+    background: var(--bg-secondary);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.opponent-info {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+}
+
+.opponent-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--bg-tertiary);
+    border: 2px solid var(--player-o);
+}
+
+.opponent-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.opponent-name {
+    flex: 1;
+    font-weight: 500;
+}
+
+.opponent-score {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+/* ========================================
+   GAME BOARD CONTAINER
+   ======================================== */
+.game-board-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-md);
+    gap: var(--space-lg);
+}
+
+/* ========================================
+   TURN INDICATOR
+   ======================================== */
+.turn-indicator {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-full);
+    box-shadow: var(--shadow-md);
+}
+
+.turn-text {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.turn-symbol {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1rem;
+    border-radius: 50%;
+    transition: all var(--transition-normal);
+}
+
+.turn-symbol.X {
+    background: var(--player-x);
+    color: #000;
+}
+
+.turn-symbol.O {
+    background: var(--player-o);
+    color: white;
+}
+
+/* Turn indicator animations */
+.turn-indicator.your-turn .turn-text {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.turn-indicator.your-turn .turn-symbol {
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* ========================================
+   GAME BOARD
+   ======================================== */
+.game-board {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    grid-template-rows: repeat(6, 1fr);
+    gap: 4px;
+    width: min(90vw, 400px);
+    aspect-ratio: 1;
+    background: var(--bg-secondary);
+    padding: 8px;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg), inset 0 0 30px rgba(0, 0, 0, 0.3);
+}
+
+/* ========================================
+   GAME CELLS
+   ======================================== */
+.cell {
+    aspect-ratio: 1;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    position: relative;
+    overflow: hidden;
+}
+
+.cell:hover:not(.occupied):not(.disabled) {
+    background: rgba(255, 255, 255, 0.1);
+    transform: scale(1.02);
+}
+
+.cell:active:not(.occupied):not(.disabled) {
+    transform: scale(0.98);
+}
+
+.cell.disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* Cell content (X and O) */
+.cell-content {
+    font-size: min(5vw, 28px);
+    font-weight: 800;
+    line-height: 1;
+    animation: popIn 0.3s ease;
+}
+
+.cell-content.X {
+    color: var(--player-x);
+    text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+}
+
+.cell-content.O {
+    color: var(--player-o);
+    text-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+}
+
+@keyframes popIn {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Winning cell highlight */
+.cell.winning {
+    animation: winPulse 0.5s ease-in-out;
+    background: rgba(251, 191, 36, 0.2);
+}
+
+@keyframes winPulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+/* Last move indicator */
+.cell.last-move::after {
+    content: '';
+    position: absolute;
+    inset: 2px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--radius-sm);
+    pointer-events: none;
+}
+
+/* ========================================
+   SCORE DISPLAY
+   ======================================== */
+.score-display {
+    display: flex;
+    gap: var(--space-xl);
+}
+
+.score-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+}
+
+.score-label {
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.score-item.player-x .score-label {
+    color: var(--player-x);
+}
+
+.score-item.player-o .score-label {
+    color: var(--player-o);
+}
+
+.score-value {
+    font-size: 1.25rem;
+    font-weight: 600;
+    min-width: 30px;
+    text-align: center;
+}
+
+/* ========================================
+   GAME FOOTER
+   ======================================== */
+.game-footer {
+    padding: var(--space-md);
+    background: var(--bg-secondary);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.my-info {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    justify-content: flex-end;
+}
+
+.my-score {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.my-name {
+    font-weight: 500;
+}
+
+.my-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--bg-tertiary);
+    border: 2px solid var(--player-x);
+}
+
+.my-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* ========================================
+   GAME OVER SCREEN
+   ======================================== */
+#game-over-screen {
+    justify-content: center;
+    align-items: center;
+    padding: var(--space-xl);
+}
+
+.game-over-content {
+    text-align: center;
+    max-width: 320px;
+}
+
+.result-icon {
+    font-size: 5rem;
+    margin-bottom: var(--space-md);
+    animation: bounce 1s ease-in-out;
+}
+
+.result-text {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: var(--space-xl);
+}
+
+.result-text.win {
+    background: var(--gradient-gold);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.result-text.loss {
+    color: var(--accent-red);
+}
+
+.result-text.draw {
+    color: var(--text-secondary);
+}
+
+/* ========================================
+   FINAL SCORES
+   ======================================== */
+.final-scores {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    margin-bottom: var(--space-xl);
+}
+
+.final-score-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-md);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+}
+
+.final-score-item.winner {
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(217, 119, 6, 0.1));
+    border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.final-score-name {
+    font-weight: 500;
+}
+
+.final-score-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.final-score-item.winner .final-score-value {
+    color: var(--accent-gold);
+}
+
+/* ========================================
+   GAME OVER ACTIONS
+   ======================================== */
+.game-over-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+/* ========================================
+   GAME ANIMATIONS
+   ======================================== */
+@keyframes scoreUpdate {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.3);
+        color: var(--accent-gold);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.score-updated {
+    animation: scoreUpdate 0.5s ease;
+}
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+@media (max-width: 360px) {
+    .game-board {
+        width: 95vw;
+        gap: 3px;
+        padding: 6px;
+    }
+    
+    .cell-content {
+        font-size: min(5vw, 24px);
+    }
+}

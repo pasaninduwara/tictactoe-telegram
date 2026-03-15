@@ -1,0 +1,281 @@
+/**
+ * Lobby Styles
+ * Create, join, and waiting room screens
+ */
+
+/* ========================================
+   CREATE LOBBY SCREEN
+   ======================================== */
+#play-mode-screen .mode-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    padding: var(--space-xl) 0;
+}
+
+/* ========================================
+   LOBBY CREATED INFO
+   ======================================== */
+.lobby-created {
+    text-align: center;
+    padding: var(--space-lg) 0;
+}
+
+.lobby-code-display {
+    margin-bottom: var(--space-xl);
+}
+
+.lobby-code-display .label {
+    display: block;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: var(--space-sm);
+}
+
+.lobby-code-display .code {
+    display: inline-block;
+    font-size: 2.5rem;
+    font-weight: 800;
+    font-family: var(--font-mono);
+    letter-spacing: 0.2em;
+    background: var(--gradient-gold);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    padding: var(--space-sm) var(--space-lg);
+    background-color: var(--bg-secondary);
+    border-radius: var(--radius-md);
+}
+
+/* ========================================
+   SHARE LINK
+   ======================================== */
+.lobby-link-display {
+    margin-bottom: var(--space-lg);
+}
+
+.lobby-link-display .label {
+    display: block;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: var(--space-sm);
+}
+
+.share-link-container {
+    display: flex;
+    gap: var(--space-sm);
+}
+
+.share-input {
+    flex: 1;
+    padding: var(--space-sm) var(--space-md);
+    background: var(--bg-tertiary);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-md);
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ========================================
+   WAITING STATUS
+   ======================================== */
+.waiting-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-md);
+    margin-top: var(--space-xl);
+    padding: var(--space-md);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+}
+
+.waiting-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--bg-tertiary);
+    border-top-color: var(--accent-gold);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+/* ========================================
+   JOIN LOBBY SCREEN
+   ======================================== */
+.join-form {
+    padding: var(--space-lg) 0;
+}
+
+.join-form .form-group input {
+    font-size: 1.5rem;
+    text-align: center;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    font-family: var(--font-mono);
+}
+
+/* ========================================
+   PUBLIC LOBBIES LIST
+   ======================================== */
+.public-lobbies h3 {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    margin-bottom: var(--space-md);
+}
+
+.lobby-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.lobby-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-md);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+}
+
+.lobby-item:hover {
+    background: var(--bg-tertiary);
+    transform: translateX(4px);
+}
+
+.lobby-item-info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+}
+
+.lobby-item-code {
+    font-weight: 600;
+    font-family: var(--font-mono);
+}
+
+.lobby-item-host {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.lobby-item-players {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.lobby-item .btn {
+    flex-shrink: 0;
+}
+
+.loading-text {
+    text-align: center;
+    color: var(--text-muted);
+    padding: var(--space-xl);
+}
+
+.empty-text {
+    text-align: center;
+    color: var(--text-muted);
+    padding: var(--space-xl);
+}
+
+/* ========================================
+   LOBBY ROOM (WAITING ROOM)
+   ======================================== */
+.lobby-info {
+    text-align: center;
+    padding: var(--space-lg) 0;
+}
+
+.players-display {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-md);
+    margin: var(--space-xl) 0;
+}
+
+.player-slot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-lg);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    min-width: 120px;
+    transition: all var(--transition-normal);
+}
+
+.player-slot.host {
+    border: 2px solid var(--accent-gold);
+}
+
+.player-slot.filled {
+    background: var(--bg-tertiary);
+}
+
+.slot-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--bg-tertiary);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.player-slot.host .slot-avatar {
+    border-color: var(--accent-gold);
+}
+
+.slot-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.slot-name {
+    font-weight: 500;
+    font-size: 0.875rem;
+}
+
+.slot-status {
+    font-size: 0.75rem;
+    color: var(--accent-gold);
+}
+
+.vs-divider {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    padding: var(--space-sm);
+}
+
+.lobby-actions {
+    margin-top: var(--space-xl);
+}
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+@media (max-width: 360px) {
+    .players-display {
+        flex-direction: column;
+    }
+    
+    .vs-divider {
+        transform: rotate(90deg);
+    }
+    
+    .player-slot {
+        width: 100%;
+    }
+}
