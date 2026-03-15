@@ -1,16 +1,15 @@
+/**
+ * Screen Manager - RIDMA MOBILE FINAL
+ */
 window.Screens = {
     show(id) {
-        // 1. Hide the loader immediately
+        // Kill the loading screen immediately
         const loader = document.getElementById('loading-screen');
         if (loader) loader.style.display = 'none';
 
-        // 2. Switch Screens
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         const target = document.getElementById(id);
-        if (target) {
-            target.classList.add('active');
-            console.log("Screens: Switched to " + id);
-        }
+        if (target) target.classList.add('active');
     }
 };
 
@@ -24,11 +23,15 @@ window.GameController = {
 window.LobbyController = {
     init() {
         const createBtn = document.getElementById('create-lobby-btn');
-        if (createBtn) createBtn.onclick = async () => {
-            const lobby = await window.GameState.createLobby();
-            window.Screens.show('lobby-room-screen');
-            document.getElementById('room-lobby-code').textContent = lobby.code;
-            window.GameState.startLobbyPolling(lobby.id);
-        };
+        if (createBtn) {
+            createBtn.onclick = async () => {
+                try {
+                    const lobby = await window.GameState.createLobby();
+                    window.Screens.show('lobby-room-screen');
+                    document.getElementById('room-lobby-code').textContent = lobby.code;
+                    window.GameState.startLobbyPolling(lobby.id);
+                } catch (e) { alert("Check Connection"); }
+            };
+        }
     }
 };
