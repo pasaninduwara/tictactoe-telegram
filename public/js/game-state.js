@@ -1,90 +1,372 @@
 /**
- * Game State Manager - Crash-Proof Version
+ * Game State Manager
+ * Manages all application state
  */
-window.GameState = {
-    playerId: null,
+
+const GameState = {
+    // Current user data
+    user: null,
+    
+    // Current lobby data
     lobby: null,
+    
+    // Current game data
     game: null,
+    
+    // Player symbol in current game ('X' or 'O')
     playerSymbol: null,
-    timers: {},
-
+    
+    // Subscription status
+    subscriptionChecked: false,
+    isSubscribed: true,
+    requiredChannel: null,
+    
+    // Polling timers
+    lobbyPollingTimer: null,
+    gamePollingTimer: null,
+    
+    // Event listeners
+    listeners: new Map(),
+    
+    /**
+     * Initialize game state
+     */
     init() {
-        console.log("GameState: Initializing...");
+        this.loadFromStorage();
+    },
+    
+    /**
+     * Load state from localStorage
+     */
+    loadFromStorage() {
         try {
-            // Ensure we have a Player ID
-            let id = localStorage.getItem('ttt_player_id');
-            if (!id) {
-                id = 'u_' + Math.random().toString(36).substr(2, 9);
-                localStorage.setItem('ttt_player_id', id);
+            const userData = localStorage.getItem(CONFIG.STORAGE_KEYS.USER_DATA);
+            if (userData) {
+                this.user = JSON.parse(userData);
             }
-            this.playerId = id;
-            console.log("GameState: Player ID is", this.playerId);
-        } catch (e) {
-            console.error("GameState Init Error:", e);
-            this.playerId = 'guest_' + Date.now(); // Emergency fallback
+            
+            const lastLobby = localStorage.getItem(CONFIG.STORAGE_KEYS.LAST_LOBBY);
+            if (lastLobby) {
+                this.lobby = JSON.parse(lastLobby);
+            }
+        } catch (error) {
+            console.error('Error loading from storage:', error);
         }
     },
-
-    async createLobby() {
+    
+    /**
+     * Save state to localStorage
+     */
+    saveToStorage() {
         try {
-            if (!window.API) throw new Error("API module missing");
-            const lobby = await window.API.createLobby(this.playerId);
-            this.lobby = lobby;
-            this.playerSymbol = 'X';
-            return lobby;
-        } catch (e) {
-            console.error("Create Lobby Error:", e);
-            alert("Connection error. Is the server running?");
-            throw e;
+            if (this.user) {
+                localStorage.setItem(CONFIG.STORAGE_KEYS.USER_DATA, JSON.stringify(this.user));
+            }
+            if (this.lobby) {
+                localStorage.setItem(CONFIG.STORAGE_KEYS.LAST_LOBBY, JSON.stringify(this.lobby));
+            }
+        } catch (error) {
+            console.error('Error saving to storage:', error);
         }
     },
-
-    async joinLobby(code) {
-        try {
-            if (!window.API) throw new Error("API module missing");
-            const lobby = await window.API.joinLobby(code, this.playerId);
-            this.lobby = lobby;
-            this.playerSymbol = 'O';
-            return lobby;
-        } catch (e) {
-            console.error("Join Lobby Error:", e);
-            throw e;
-        }
-    },
-
-    startLobbyPolling(lobbyId) {
-        this.stopPolling('lobby');
-        console.log("GameState: Starting Lobby Poll for", lobbyId);
+    
+    /**
+     * Clear all state
+     */
+    clear() {
+        this.user = null;
+        this.lobby = null;
+        this.game = null;
+        this.playerSymbol = null;
+        this.stopPolling();
         
-        this.timers.lobby = setInterval(async () => {
-            try {
-                if (!window.API || !window.API.getLobby) return;
-                
-                const lobby = await window.API.getLobby(lobbyId);
-                if (lobby && lobby.status === 'playing') {
-                    console.log("GameState: Status changed to PLAYING");
-                    this.stopPolling('lobby');
-                    
-                    // Trigger the UI change
-                    if (window.GameController && window.GameController.enterGame) {
-                        window.GameController.enterGame(lobby);
-                    } else {
-                        console.error("GameController not ready to enter game!");
-                    }
-                }
-            } catch (e) {
-                console.warn("Lobby Polling Heartbeat Error (Normal during deploy):", e);
-            }
-        }, 2000);
+        localStorage.removeItem(CONFIG.STORAGE_KEYS.USER_DATA);
+        localStorage.removeItem(CONFIG.STORAGE_KEYS.LAST_LOBBY);
+        localStorage.removeItem(CONFIG.STORAGE_KEYS.AUTH_DATA);
     },
-
-    stopPolling(name) {
-        if (this.timers[name]) {
-            clearInterval(this.timers[name]);
-            delete this.timers[name];
+    
+    // ==========================================
+    // User State
+    // ==========================================
+    
+    /**
+     * Set current user
+     * @param {Object} user - User data
+     */
+    setUser(user) {
+        this.user = user;
+        this.saveToStorage();
+        this.emit('userChanged', user);
+    },
+    
+    /**
+     * Update user data
+     * @param {Object} updates - Fields to update
+     */
+    updateUser(updates) {
+        this.user = { ...this.user, ...updates };
+        this.saveToStorage();
+        this.emit('userChanged', this.user);
+    },
+    
+    /**
+     * Get current user ID
+     * @returns {number|null}
+     */
+    getUserId() {
+        return this.user?.id || null;
+    },
+    
+    // ==========================================
+    // Lobby State
+    // ==========================================
+    
+    /**
+     * Set current lobby
+     * @param {Object} lobby - Lobby data
+     */
+    setLobby(lobby) {
+        this.lobby = lobby;
+        this.saveToStorage();
+        this.emit('lobbyChanged', lobby);
+    },
+    
+    /**
+     * Clear lobby state
+     */
+    clearLobby() {
+        this.lobby = null;
+        localStorage.removeItem(CONFIG.STORAGE_KEYS.LAST_LOBBY);
+        this.emit('lobbyChanged', null);
+    },
+    
+    /**
+     * Check if user is lobby host
+     * @returns {boolean}
+     */
+    isLobbyHost() {
+        return this.lobby?.hostUserId === this.getUserId();
+    },
+    
+    // ==========================================
+    // Game State
+    // ==========================================
+    
+    /**
+     * Set current game
+     * @param {Object} game - Game data
+     */
+    setGame(game) {
+        this.game = game;
+        
+        // Determine player symbol
+        if (game) {
+            this.playerSymbol = game.playerXId === this.getUserId() ? 'X' : 'O';
+        } else {
+            this.playerSymbol = null;
+        }
+        
+        this.emit('gameChanged', game);
+    },
+    
+    /**
+     * Update game board
+     * @param {Array} board - New board state
+     */
+    updateBoard(board) {
+        if (this.game) {
+            this.game.board = board;
+            this.emit('boardChanged', board);
+        }
+    },
+    
+    /**
+     * Check if it's current player's turn
+     * @returns {boolean}
+     */
+    isMyTurn() {
+        return this.game?.currentTurn === this.playerSymbol;
+    },
+    
+    /**
+     * Get opponent's name
+     * @returns {string}
+     */
+    getOpponentName() {
+        if (!this.game) return 'Opponent';
+        
+        if (this.playerSymbol === 'X') {
+            return this.game.playerOName || 'Opponent';
+        }
+        return this.game.playerXName || 'Opponent';
+    },
+    
+    /**
+     * Get opponent's score
+     * @returns {number}
+     */
+    getOpponentScore() {
+        if (!this.game) return 0;
+        
+        const scores = this.game.scores || { X: 0, O: 0 };
+        if (this.playerSymbol === 'X') {
+            return scores.O;
+        }
+        return scores.X;
+    },
+    
+    /**
+     * Get current player's score
+     * @returns {number}
+     */
+    getMyScore() {
+        if (!this.game) return 0;
+        
+        const scores = this.game.scores || { X: 0, O: 0 };
+        if (this.playerSymbol === 'X') {
+            return scores.X;
+        }
+        return scores.O;
+    },
+    
+    // ==========================================
+    // Polling
+    // ==========================================
+    
+    /**
+     * Start polling for lobby updates
+     * @param {Function} callback - Callback function
+     */
+    startLobbyPolling(callback) {
+        this.stopLobbyPolling();
+        
+        const poll = async () => {
+            if (!this.lobby?.lobbyCode) return;
+            
+            try {
+                const response = await API.getLobby(this.lobby.lobbyCode);
+                if (response.success) {
+                    this.setLobby(response.lobby);
+                    callback(response.lobby);
+                }
+            } catch (error) {
+                console.error('Lobby polling error:', error);
+            }
+        };
+        
+        // Initial poll
+        poll();
+        
+        // Start interval
+        this.lobbyPollingTimer = setInterval(poll, CONFIG.POLLING_INTERVAL);
+    },
+    
+    /**
+     * Stop lobby polling
+     */
+    stopLobbyPolling() {
+        if (this.lobbyPollingTimer) {
+            clearInterval(this.lobbyPollingTimer);
+            this.lobbyPollingTimer = null;
+        }
+    },
+    
+    /**
+     * Start polling for game updates
+     * @param {Function} callback - Callback function
+     */
+    startGamePolling(callback) {
+        this.stopGamePolling();
+        
+        const poll = async () => {
+            if (!this.game?.id) return;
+            
+            try {
+                const response = await API.getGame(this.game.id);
+                if (response.success) {
+                    this.setGame(response.game);
+                    callback(response.game);
+                }
+            } catch (error) {
+                console.error('Game polling error:', error);
+            }
+        };
+        
+        // Initial poll
+        poll();
+        
+        // Start interval
+        this.gamePollingTimer = setInterval(poll, CONFIG.POLLING_INTERVAL);
+    },
+    
+    /**
+     * Stop game polling
+     */
+    stopGamePolling() {
+        if (this.gamePollingTimer) {
+            clearInterval(this.gamePollingTimer);
+            this.gamePollingTimer = null;
+        }
+    },
+    
+    /**
+     * Stop all polling
+     */
+    stopPolling() {
+        this.stopLobbyPolling();
+        this.stopGamePolling();
+    },
+    
+    // ==========================================
+    // Event System
+    // ==========================================
+    
+    /**
+     * Subscribe to state changes
+     * @param {string} event - Event name
+     * @param {Function} callback - Callback function
+     * @returns {Function} Unsubscribe function
+     */
+    on(event, callback) {
+        if (!this.listeners.has(event)) {
+            this.listeners.set(event, new Set());
+        }
+        this.listeners.get(event).add(callback);
+        
+        return () => this.off(event, callback);
+    },
+    
+    /**
+     * Unsubscribe from state changes
+     * @param {string} event - Event name
+     * @param {Function} callback - Callback function
+     */
+    off(event, callback) {
+        if (this.listeners.has(event)) {
+            this.listeners.get(event).delete(callback);
+        }
+    },
+    
+    /**
+     * Emit a state change event
+     * @param {string} event - Event name
+     * @param {*} data - Event data
+     */
+    emit(event, data) {
+        if (this.listeners.has(event)) {
+            this.listeners.get(event).forEach(callback => {
+                try {
+                    callback(data);
+                } catch (error) {
+                    console.error(`Error in event listener for ${event}:`, error);
+                }
+            });
         }
     }
 };
 
-// Auto-run init immediately
-window.GameState.init();
+// Initialize on load
+GameState.init();
+
+// Make GameState globally available
+window.GameState = GameState;
