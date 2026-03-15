@@ -164,7 +164,7 @@ const App = {
         if (isTesting) {
             return this.createMockUser();
         }
-        return false;
+        return this.createMockUser();
     }
     // ... rest of your code
 }
