@@ -1,21 +1,17 @@
 /**
- * Game State Manager - RIDMA MOBILE Unified Version
+ * Game State Manager - RIDMA MOBILE FINAL
  */
-window.GameState = {
+const GameState = {
     playerId: null,
     lobby: null,
     playerSymbol: null,
     pollTimer: null,
 
     init() {
-        // Ensure a persistent ID exists
-        let id = localStorage.getItem('ttt_player_id');
-        if (!id) {
-            id = 'u' + Math.random().toString(36).substr(2, 7);
-            localStorage.setItem('ttt_player_id', id);
-        }
-        this.playerId = id;
-        console.log("GameState: Player ready - " + id);
+        // Ensure Player ID is set immediately
+        this.playerId = localStorage.getItem('ttt_player_id') || 'u' + Math.random().toString(36).substr(2, 7);
+        localStorage.setItem('ttt_player_id', this.playerId);
+        console.log("GameState: Ready");
     },
 
     async createLobby() {
@@ -34,37 +30,29 @@ window.GameState = {
 
     startLobbyPolling(lobbyId) {
         if (this.pollTimer) clearInterval(this.pollTimer);
-        
-        console.log("GameState: Polling for game start...");
         this.pollTimer = setInterval(async () => {
             try {
                 const lobby = await window.API.getLobby(lobbyId);
-                
                 if (lobby && lobby.status === 'playing') {
-                    console.log("GameState: Match found! Starting UI...");
                     clearInterval(this.pollTimer);
-                    
-                    // FORCE TRANSITION FOR JOINING PLAYER
-                    if (window.Screens) window.Screens.show('game-screen');
-                    
+                    // FORCE THE TRANSITION
+                    window.Screens.show('game-screen');
                     if (window.GameBoard) {
-                        const boardDiv = document.getElementById('game-board');
-                        window.GameBoard.init(boardDiv, (r, c) => {
+                        window.GameBoard.init(document.getElementById('game-board'), (r, c) => {
                             this.makeMove(r, c);
                         });
-                        window.GameBoard.render(lobby.board || []);
+                        window.GameBoard.render(lobby.board);
                     }
                 }
-            } catch (e) { console.log("Waiting for host..."); }
+            } catch (e) { console.log("Syncing..."); }
         }, 1500);
     },
 
     async makeMove(r, c) {
         if (!this.lobby) return;
-        try {
-            await window.API.makeMove(this.lobby.id, this.playerId, r, c);
-        } catch (e) { console.error("Move failed", e); }
+        await window.API.makeMove(this.lobby.id, this.playerId, r, c);
     }
 };
 
-window.GameState.init();
+window.GameState = GameState;
+GameState.init();
