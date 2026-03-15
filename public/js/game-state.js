@@ -1,6 +1,6 @@
 /**
  * Game State Manager
- * Synchronizes database state with the UI
+ * Handles data synchronization and polling
  */
 
 const GameState = {
@@ -15,8 +15,17 @@ const GameState = {
      * Initialize GameState
      */
     init() {
-        console.log("GameState initialized.");
-        // Player ID is set by App.js during setup
+        console.log("GameState ready.");
+        // Try to load player from localStorage if Telegram isn't available
+        if (!this.playerId) {
+            const savedId = localStorage.getItem('ttt_player_id');
+            if (savedId) {
+                this.playerId = savedId;
+            } else {
+                this.playerId = 'user_' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('ttt_player_id', this.playerId);
+            }
+        }
     },
 
     /**
@@ -24,12 +33,15 @@ const GameState = {
      */
     async createLobby() {
         try {
+            // Ensure API exists
+            if (!window.API) throw new Error("API module not loaded");
+            
             const lobby = await API.createLobby(this.playerId);
             this.lobby = lobby;
-            this.playerSymbol = 'X'; // Host is always X
+            this.playerSymbol = 'X'; 
             return lobby;
         } catch (error) {
-            console.error("Error creating lobby:", error);
+            console.error("Lobby creation failed:", error);
             throw error;
         }
     },
@@ -41,21 +53,20 @@ const GameState = {
         try {
             const lobby = await API.joinLobby(lobbyCode, this.playerId);
             this.lobby = lobby;
-            this.playerSymbol = 'O'; // Joining player is always O
+            this.playerSymbol = 'O';
             return lobby;
         } catch (error) {
-            console.error("Error joining lobby:", error);
+            console.error("Lobby join failed:", error);
             throw error;
         }
     },
 
     /**
-     * Monitor the lobby for the start of the game
+     * Polling logic to detect when the game starts
      */
     startLobbyPolling(lobbyId, onUpdate) {
         this.stopPolling();
-        console.log("Monitoring lobby status...");
-
+        
         this.lobbyPollingTimer = setInterval(async () => {
             try {
                 const lobby = await API.getLobby(lobbyId);
@@ -63,9 +74,9 @@ const GameState = {
 
                 this.lobby = lobby;
 
-                // CRITICAL FIX: If host started the game, tell the UI to switch
+                // TRIGGER: If status is 'playing', switch screens immediately
                 if (lobby.status === 'playing') {
-                    console.log("Match found! Transitioning to Game Screen...");
+                    console.log("MATCH STARTING...");
                     this.stopPolling();
                     
                     if (window.GameController) {
@@ -75,13 +86,13 @@ const GameState = {
 
                 if (onUpdate) onUpdate(lobby);
             } catch (error) {
-                console.error("Lobby polling error:", error);
+                console.error("Polling error:", error);
             }
-        }, 2000); // Check every 2 seconds
+        }, 2000);
     },
 
     /**
-     * Monitor the active game board for moves
+     * Polling logic for moves during the game
      */
     startGamePolling(onUpdate) {
         this.stopGamePolling();
@@ -89,48 +100,41 @@ const GameState = {
         this.gamePollingTimer = setInterval(async () => {
             try {
                 const game = await API.getGame(this.lobby.id);
-                if (!game) return;
-
-                this.game = game;
-                if (onUpdate) onUpdate(game);
+                if (game) {
+                    this.game = game;
+                    if (onUpdate) onUpdate(game);
+                }
             } catch (error) {
-                console.error("Game polling error:", error);
+                console.error("Game update error:", error);
             }
-        }, 1500); // Faster polling during active play
+        }, 1000);
     },
 
-    /**
-     * Send a move to the database
-     */
     async makeMove(row, col) {
-        // Check if it's actually this player's turn
-        if (this.game && this.game.currentTurn !== this.playerId) {
-            console.warn("It is not your turn!");
-            return;
-        }
+        if (!this.game || this.game.currentTurn !== this.playerId) return;
 
         try {
             await API.makeMove(this.lobby.id, this.playerId, row, col);
         } catch (error) {
-            console.error("Error making move:", error);
+            console.error("Move failed:", error);
         }
     },
 
     stopPolling() {
-        if (this.lobbyPollingTimer) {
-            clearInterval(this.lobbyPollingTimer);
-            this.lobbyPollingTimer = null;
-        }
+        if (this.lobbyPollingTimer) clearInterval(this.lobbyPollingTimer);
     },
 
     stopGamePolling() {
-        if (this.gamePollingTimer) {
-            clearInterval(this.gamePollingTimer);
-            this.gamePollingTimer = null;
-        }
+        if (this.gamePollingTimer) clearInterval(this.gamePollingTimer);
     }
 };
 
-// Make GameState globally available
+// Global assignment
 window.GameState = GameState;
-GameState.init();
+
+// Auto-init
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => GameState.init());
+} else {
+    GameState.init();
+}
