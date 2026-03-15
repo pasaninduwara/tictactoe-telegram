@@ -149,25 +149,30 @@ const App = {
      * @returns {Promise<boolean>}
      */
     async checkAuth() {
-        if (!this.tg?.initData) {
-            console.warn('No Telegram init data - running in standalone mode');
-            // For testing outside Telegram, create mock user
-            async checkAuth() {
     if (!this.tg?.initData) {
-        console.warn('No Telegram init data - running in standalone mode');
-        
-        // Allow BOTH localhost AND your Vercel domain to use the mock user for testing
-        const isTesting = window.location.hostname === 'localhost' || 
-                          window.location.hostname === '127.0.0.1' ||
-                          window.location.hostname.includes('vercel.app');
+      console.warn('No Telegram init data - running in standalone mode');
 
-        if (isTesting) {
-            return this.createMockUser();
-        }
+      const isTesting = window.location.hostname === 'localhost' || 
+                        window.location.hostname === '127.0.0.1' ||
+                        window.location.hostname.includes('vercel.app');
+
+      if (isTesting) {
         return this.createMockUser();
+      }
+      return false;
     }
-    // ... rest of your code
-}
+
+    try {
+      const response = await API.validateAuth(this.tg.initData);
+      if (response.success && response.user) {
+        return response.user;
+      }
+      return this.createMockUser(); // Fallback so it doesn't get stuck loading
+    } catch (error) {
+      console.error('Auth error:', error);
+      return this.createMockUser(); // Fallback so it doesn't get stuck loading
+    }
+  }
         
         try {
             const response = await API.validateAuth(this.tg.initData);
