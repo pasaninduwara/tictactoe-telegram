@@ -1,84 +1,44 @@
-/**
- * Main Application Entry Point
- * Safe-loading version
- */
+window.GameBoard = {
+    element: null,
+    size: 6,
 
-const App = {
-    async init() {
-        console.log("Checking dependencies...");
-
-        // 1. Wait for all global modules to be available
-        const dependencies = [
-            'Screens', 
-            'LobbyController', 
-            'GameController', 
-            'GameBoard', 
-            'GameState'
-        ];
-
-        for (const dep of dependencies) {
-            if (!window[dep]) {
-                console.error(`Missing dependency: ${dep}. Make sure your script tags in index.html are correct.`);
-                this.showError(`Error: ${dep} failed to load.`);
-                return;
-            }
+    init() {
+        this.element = document.getElementById('game-board');
+        if (!this.element) {
+            console.error("Board container not found!");
+            return;
         }
+        this.createGrid();
+    },
 
-        try {
-            // 2. Initialize Telegram
-            if (window.Telegram && window.Telegram.WebApp) {
-                window.Telegram.WebApp.ready();
-                window.Telegram.WebApp.expand();
-            }
+    createGrid() {
+        this.element.innerHTML = '';
+        this.element.style.display = 'grid';
+        this.element.style.gridTemplateColumns = `repeat(${this.size}, 1fr)`;
 
-            // 3. Initialize all modules
-            window.Screens.init();
-            window.LobbyController.init();
-            window.GameController.init();
-            // GameBoard is initialized inside GameController.enterGame
-
-            // 4. Identity Check
-            await this.setupPlayer();
-
-            // 5. Success! Show the Menu
-            window.Screens.show('menu-screen');
+        for (let i = 0; i < this.size * this.size; i++) {
+            const cell = document.createElement('div');
+            cell.className = 'cell';
+            cell.dataset.index = i;
+            const row = Math.floor(i / this.size);
+            const col = i % this.size;
             
-            // Hide loading overlay
-            const loader = document.getElementById('loading-screen');
-            if (loader) loader.style.display = 'none';
-
-        } catch (error) {
-            console.error("Initialization failed:", error);
-            this.showError("Failed to start the app. Please refresh.");
+            cell.onclick = () => this.handleMove(row, col);
+            this.element.appendChild(cell);
         }
     },
 
-    async setupPlayer() {
-        if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
-            const user = window.Telegram.WebApp.initDataUnsafe.user;
-            window.GameState.playerId = user.id.toString();
-            
-            const nameEl = document.getElementById('player-name');
-            if (nameEl) nameEl.textContent = user.first_name;
-        } else {
-            // Fallback for PC testing
-            const mockId = 'player_' + Math.random().toString(36).substr(2, 5);
-            window.GameState.playerId = mockId;
-            console.log("Mock Player ID assigned:", mockId);
-        }
+    render(boardData) {
+        if (!boardData) return;
+        const flatBoard = boardData.flat();
+        const cells = this.element.querySelectorAll('.cell');
+        cells.forEach((cell, i) => {
+            cell.textContent = flatBoard[i] || '';
+            cell.className = `cell ${flatBoard[i] ? flatBoard[i].toLowerCase() : ''}`;
+        });
     },
 
-    showError(msg) {
-        const loadingText = document.querySelector('.loading-text');
-        if (loadingText) loadingText.textContent = msg;
-        const spinner = document.querySelector('.loading-spinner');
-        if (spinner) spinner.style.borderTopColor = 'red';
+    handleMove(r, c) {
+        if (window.GameState) window.GameState.makeMove(r, c);
     }
 };
-
-// This ensures the DOM is ready AND all scripts are parsed
-if (document.readyState === 'complete') {
-    App.init();
-} else {
-    window.addEventListener('load', () => App.init());
-}
