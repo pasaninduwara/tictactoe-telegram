@@ -5,7 +5,27 @@
 
 const App = {
     initialized: false,
-    tg: null,
+    tg: nullwindow.App = {
+    async init() {
+        // Wait for Telegram
+        if (window.Telegram && window.Telegram.WebApp) {
+            window.Telegram.WebApp.ready();
+            window.Telegram.WebApp.expand();
+        }
+
+        // Safety: ensure all modules exist
+        if (!window.Screens || !window.GameState) {
+            console.error("Missing Modules!");
+            return;
+        }
+
+        // Show the menu and hide the loader
+        window.Screens.show('menu-screen');
+    }
+};
+
+// Start when all scripts and images are done loading
+window.addEventListener('load', () => window.App.init());,
     pendingStartParam: null,
     
     /**
