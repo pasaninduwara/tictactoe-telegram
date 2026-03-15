@@ -1,118 +1,98 @@
 /**
- * Game Board Module
- * Handles the 6x6 game board rendering and interactions
+ * Main Application Entry Point
  */
 
-const GameBoard = {
-    boardElement: null,
-    cells: [],
-    board: null,
-    disabled: false,
-    onCellClick: null,
-    size: 6,
-    
+const App = {
     /**
-     * Initialize the game board
-     * @param {number} size - Optional board size (defaults to 6)
+     * Initialize the application
      */
-    init(size = 6) {
-        this.size = size;
-        this.boardElement = document.getElementById('game-board');
-        
-        if (!this.boardElement) {
-            console.error("Game board container (#game-board) not found in HTML");
-            return;
-        }
+    async init() {
+        console.log("Initializing Tic-Tac-Toe App...");
 
-        this.disabled = false;
-        this.createBoard();
-    },
-    
-    /**
-     * Create the 6x6 board grid
-     */
-    createBoard() {
-        this.boardElement.innerHTML = '';
-        this.cells = [];
-        
-        // Use CSS Grid for layout
-        this.boardElement.style.display = 'grid';
-        this.boardElement.style.columns = `repeat(${this.size}, 1fr)`;
-        
-        for (let row = 0; row < this.size; row++) {
-            for (let col = 0; col < this.size; col++) {
-                const cell = document.createElement('div');
-                cell.className = 'cell';
-                cell.dataset.row = row;
-                cell.dataset.col = col;
-                
-                const content = document.createElement('span');
-                content.className = 'cell-content';
-                cell.appendChild(content);
-                
-                cell.addEventListener('click', () => this.handleCellClick(row, col));
-                
-                this.boardElement.appendChild(cell);
-                this.cells.push(cell);
+        try {
+            // 1. Initialize Telegram WebApp
+            if (window.Telegram && window.Telegram.WebApp) {
+                window.Telegram.WebApp.ready();
+                window.Telegram.WebApp.expand();
             }
-        }
-    },
-    
-    /**
-     * Handle cell click
-     */
-    handleCellClick(row, col) {
-        if (this.disabled) return;
-        
-        // Call the move function in GameState
-        if (window.GameState && typeof window.GameState.makeMove === 'function') {
-            window.GameState.makeMove(row, col);
-        }
-    },
-    
-    /**
-     * Render the board state
-     * @param {Array} boardData - 2D array representing the board
-     */
-    render(boardData) {
-        if (!boardData) return;
-        this.board = boardData;
-        
-        const flatBoard = boardData.flat();
-        this.cells.forEach((cell, index) => {
-            const value = flatBoard[index];
-            const content = cell.querySelector('.cell-content');
+
+            // 2. Initialize Core Modules
+            // We wait for DOM to be fully loaded to ensure HTML elements exist
+            if (window.Screens) window.Screens.init();
+            if (window.LobbyController) window.LobbyController.init();
+            if (window.GameController) window.GameController.init();
+
+            // 3. Authenticate User
+            const user = await this.authenticateUser();
+            if (!user) {
+                throw new Error("Authentication failed");
+            }
+
+            // 4. Check Subscription (Optional - based on your index.html logic)
+            const isSubscribed = await this.checkSubscription(user.id);
             
-            cell.classList.remove('x', 'o');
-            if (value) {
-                cell.classList.add(value.toLowerCase());
-                content.textContent = value;
+            if (!isSubscribed) {
+                if (window.Screens) window.Screens.show('subscription-screen');
             } else {
-                content.textContent = '';
+                // Load user data into the UI
+                this.loadUserData(user);
+                // Finally, show the main menu
+                if (window.Screens) window.Screens.show('menu-screen');
             }
-        });
-    },
 
-    /**
-     * Disable board interactions
-     */
-    disable() {
-        this.disabled = true;
-        if (this.boardElement) {
-            this.boardElement.classList.add('disabled');
+            // Hide the loading screen
+            const loadingScreen = document.getElementById('loading-screen');
+            if (loadingScreen) loadingScreen.style.display = 'none';
+
+        } catch (error) {
+            console.error("App Initialization Error:", error);
+            // Display error to user
+            const loadingText = document.querySelector('.loading-text');
+            if (loadingText) loadingText.textContent = "Error loading app. Please refresh.";
         }
     },
 
     /**
-     * Enable board interactions
+     * Authenticate user via Telegram or Mock data for testing
      */
-    enable() {
-        this.disabled = false;
-        if (this.boardElement) {
-            this.boardElement.classList.remove('disabled');
+    async authenticateUser() {
+        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
+            // Use real Telegram data
+            const tgUser = window.Telegram.WebApp.initDataUnsafe.user;
+            if (window.GameState) window.GameState.playerId = tgUser.id.toString();
+            return tgUser;
+        } else {
+            // Mock user for PC browser testing
+            console.warn("Running outside Telegram. Using mock user.");
+            const mockId = 'user_' + Math.floor(Math.random() * 1000);
+            if (window.GameState) window.GameState.playerId = mockId;
+            return { id: mockId, first_name: "Developer", last_name: "Mode" };
+        }
+    },
+
+    /**
+     * Mock subscription check
+     */
+    async checkSubscription(userId) {
+        // Replace with your actual API call to check Telegram channel membership
+        return true; 
+    },
+
+    /**
+     * Populate UI with player details
+     */
+    loadUserData(user) {
+        const nameElement = document.getElementById('player-name');
+        if (nameElement) nameElement.textContent = user.first_name || "Player";
+        
+        const avatarImg = document.getElementById('avatar-img');
+        if (avatarImg && user.photo_url) {
+            avatarImg.src = user.photo_url;
         }
     }
 };
 
-// Make GameBoard globally available
-window.GameBoard = GameBoard;
+// Start the app when the window is fully loaded
+window.addEventListener('load', () => {
+    App.init();
+});
